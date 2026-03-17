@@ -45,7 +45,7 @@ Cuando logres un acuerdo, confirma: monto y fecha de pago.
 Nunca seas agresivo. Siempre ofrece soluciones."""
             },
             "voice": {
-                "provider": "elevenlabs",
+                "provider": "11labs",
                 "voiceId": os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
             },
             "firstMessage": f"Hola, ¿hablo con {deudor['nombre']}? Le llamo de nuestra empresa para hablar sobre su cuenta.",
