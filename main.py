@@ -1,11 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from routers import deudores
+from routers import deudores, llamadas
 
-app = FastAPI(
-    title="Cobranza IA API",
-    version="1.0.0"
-)
+app = FastAPI(title="Cobranza IA API", version="1.0.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,6 +12,7 @@ app.add_middleware(
 )
 
 app.include_router(deudores.router)
+app.include_router(llamadas.router)
 
 @app.get("/")
 def health_check():
