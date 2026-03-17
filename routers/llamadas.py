@@ -10,7 +10,6 @@ VAPI_URL = "https://api.vapi.ai/call/phone"
 
 @router.post("/iniciar/{cedula}")
 def iniciar_llamada(cedula: str):
-    # 1. Buscar deudor
     res = supabase.table("deudores")\
         .select("*").eq("cedula", cedula).single().execute()
     if not res.data:
@@ -18,7 +17,6 @@ def iniciar_llamada(cedula: str):
     
     deudor = res.data
 
-    # 2. Llamar a Vapi
     payload = {
         "phoneNumberId": os.getenv("VAPI_PHONE_NUMBER_ID"),
         "customer": {
@@ -28,28 +26,24 @@ def iniciar_llamada(cedula: str):
             "model": {
                 "provider": "anthropic",
                 "model": "claude-sonnet-4-20250514",
-                "systemPrompt": f"""Eres un agente de cobranza profesional y amable de nuestra empresa.
+                "systemPrompt": f"""Eres un agente de cobranza profesional y amable.
 Hablas español colombiano natural y cordial.
 Estás llamando a {deudor['nombre']} sobre una deuda de ${deudor['monto']:,.0f} pesos 
 que venció el {deudor['fecha_vencimiento']}.
-
-Tu objetivo es llegar a un acuerdo de pago. Sé empático pero firme.
-
-Maneja estas objeciones:
-- "No tengo plata" → Ofrece un plan de pagos en cuotas
-- "Ya pagué" → Pide el soporte y escala a un asesor humano
-- "Llame después" → Confirma una fecha y hora específica
-- "Es un error" → Escala a un asesor humano amablemente
-
-Cuando logres un acuerdo, confirma: monto y fecha de pago.
-Nunca seas agresivo. Siempre ofrece soluciones."""
+Tu objetivo es llegar a un acuerdo de pago.
+Maneja objeciones:
+- No tengo plata: Ofrece plan de pagos
+- Ya pagué: Pide soporte y escala a humano
+- Llame después: Confirma fecha y hora
+- Es un error: Escala a humano amablemente
+Cuando logres acuerdo confirma monto y fecha de pago."""
             },
             "voice": {
                 "provider": "11labs",
                 "voiceId": os.getenv("ELEVENLABS_VOICE_ID", "21m00Tcm4TlvDq8ikWAM")
             },
-            "firstMessage": f"Hola, ¿hablo con {deudor['nombre']}? Le llamo de nuestra empresa para hablar sobre su cuenta.",
-            "endCallPhrases": ["hasta luego", "chao", "adiós", "que le vaya bien", "hasta pronto"]
+            "firstMessage": f"Hola, ¿hablo con {deudor['nombre']}? Le llamo para hablar sobre su cuenta.",
+            "endCallPhrases": ["hasta luego", "chao", "adiós", "que le vaya bien"]
         }
     }
 
@@ -65,13 +59,11 @@ Nunca seas agresivo. Siempre ofrece soluciones."""
 
     call_data = response.json()
 
-    # 3. Actualizar intentos en DB
     supabase.table("deudores").update({
         "intentos_llamada": deudor["intentos_llamada"] + 1,
         "estado": "en_gestion"
     }).eq("cedula", cedula).execute()
 
-    # 4. Registrar gestión
     supabase.table("gestiones").insert({
         "deudor_id": deudor["id"],
         "canal": "llamada",
@@ -84,7 +76,6 @@ Nunca seas agresivo. Siempre ofrece soluciones."""
         "deudor": deudor["nombre"],
         "telefono": deudor["celular"]
     }
-
 
 @router.get("/estado/{call_id}")
 def estado_llamada(call_id: str):
